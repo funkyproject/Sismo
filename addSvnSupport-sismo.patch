@@ -1,0 +1,630 @@
+diff --git a/LICENSE b/LICENSE
+old mode 100644
+new mode 100755
+diff --git a/README.rst b/README.rst
+old mode 100644
+new mode 100755
+diff --git a/contrib/GoogleTalkNotifier.php b/contrib/GoogleTalkNotifier.php
+old mode 100644
+new mode 100755
+diff --git a/contrib/XmppNotifier.php b/contrib/XmppNotifier.php
+old mode 100644
+new mode 100755
+diff --git a/phpunit.xml.dist b/phpunit.xml.dist
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/AnsiEscapeSequencesConverter.php b/src/Sismo/AnsiEscapeSequencesConverter.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/BuildException.php b/src/Sismo/BuildException.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/Builder.php b/src/Sismo/Builder.php
+old mode 100644
+new mode 100755
+index 0b82ac5..418410f
+--- a/src/Sismo/Builder.php
++++ b/src/Sismo/Builder.php
+@@ -11,113 +11,25 @@
+ 
+ namespace Sismo;
+ 
+-use Symfony\Component\Process\Process;
+-use Symfony\Component\HttpKernel\Util\Filesystem;
+ 
+ // @codeCoverageIgnoreStart
+ /**
+  * Builds commits.
+  *
+  * @author Fabien Potencier <fabien@symfony.com>
++ * @author Aurelien Fontaine	<aurelien@efidev.com>
+  */
+-class Builder
++interface Builder
+ {
+-    private $project;
+-    private $baseBuildDir;
+-    private $buildDir;
+-    private $callback;
+-    private $gitPath;
+-    private $gitCmds;
++  
++    public function __construct($buildDir, $scmPath, array $scmCmds);
+ 
+-    public function __construct($buildDir, $gitPath, array $gitCmds)
+-    {
+-        $this->baseBuildDir = $buildDir;
+-        $this->gitPath = $gitPath;
+-        $this->gitCmds = array_replace(array(
+-            'clone'    => 'clone --progress --recursive %repo% %dir%',
+-            'fetch'    => 'fetch origin',
+-            'prepare'  => 'submodule update --init --recursive',
+-            'checkout' => 'checkout origin/%branch%',
+-            'reset'    => 'reset --hard %revision%',
+-            'show'     => 'show -s --pretty=format:"%format%" %revision%',
+-        ), $gitCmds);
+-    }
++    public function init(Project $project, $callback = null);
+ 
+-    public function init(Project $project, $callback = null)
+-    {
+-        $this->project  = $project;
+-        $this->callback = $callback;
+-        $this->buildDir = $this->baseBuildDir.'/'.substr(md5($project->getRepository()), 0, 6);
+-    }
++    public function build();
+ 
+-    public function build()
+-    {
+-        file_put_contents($this->buildDir.'/sismo-run-tests.sh', str_replace(array("\r\n", "\r"), "\n", $this->project->getCommand()));
++    public function prepare($revision, $sync);
+ 
+-        $process = new Process('sh sismo-run-tests.sh', $this->buildDir);
+-        $process->setTimeout(3600);
+-        $process->run($this->callback);
+-
+-        return $process;
+-    }
+-
+-    public function prepare($revision, $sync)
+-    {
+-        if (!file_exists($this->buildDir)) {
+-            $filesystem = new Filesystem();
+-            $filesystem->mkdir($this->buildDir);
+-        }
+-
+-        if (!file_exists($this->buildDir.'/.git')) {
+-            $this->execute(strtr($this->gitPath.' '.$this->gitCmds['clone'], array('%repo%' => $this->project->getRepository(), '%dir%' => $this->buildDir)), sprintf('Unable to clone repository for project "%s".', $this->project));
+-        }
+-
+-        if ($sync) {
+-            $this->execute($this->gitPath.' '.$this->gitCmds['fetch'], sprintf('Unable to fetch repository for project "%s".', $this->project));
+-            $this->execute($this->gitPath.' '.$this->gitCmds['prepare'], sprintf('Unable to update submodules for project "%s".', $this->project));
+-        }
+-
+-        $this->execute(strtr($this->gitPath.' '.$this->gitCmds['checkout'], array('%branch%' => $this->project->getBranch())), sprintf('Unable to checkout branch "%s" for project "%s".', $this->project->getBranch(), $this->project));
+-
+-        if (null === $revision || 'HEAD' === $revision) {
+-            $revision = null;
+-            if (file_exists($file = $this->buildDir.'/.git/HEAD')) {
+-                $revision = trim(file_get_contents($file));
+-                if (0 === strpos($revision, 'ref: ')) {
+-                    if (file_exists($file = $this->buildDir.'/.git/'.substr($revision, 5))) {
+-                        $revision = trim(file_get_contents($file));
+-                    } else {
+-                        $revision = null;
+-                    }
+-                }
+-            }
+-
+-            if (null === $revision) {
+-                throw new BuildException(sprintf('Unable to get HEAD for branch "%s" for project "%s".', $this->project->getBranch(), $this->project));
+-            }
+-        }
+-
+-        $this->execute(strtr($this->gitPath.' '.$this->gitCmds['reset'], array('%revision%' => $revision)), sprintf('Revision "%s" for project "%s" does not exist.', $revision, $this->project));
+-
+-        $format = '%H%n%an%n%ci%n%s%n';
+-        $process = $this->execute(strtr($this->gitPath.' '.$this->gitCmds['show'], array('%format%' => $format, '%revision%' => $revision)), sprintf('Unable to get logs for project "%s".', $this->project));
+-
+-        return explode("\n", trim($process->getOutput()), 4);
+-    }
+-
+-    private function execute($command, $message)
+-    {
+-        if (null !== $this->callback) {
+-            call_user_func($this->callback, 'out', sprintf("Running \"%s\"\n", $command));
+-        }
+-        $process = new Process($command, $this->buildDir);
+-        $process->setTimeout(3600);
+-        $process->run($this->callback);
+-        if ($process->getExitCode() > 0) {
+-            throw new BuildException($message);
+-        }
+-
+-        return $process;
+-    }
++    //private function execute($command, $message);
+ }
+ // @codeCoverageIgnoreEnd
+diff --git a/src/Sismo/Commit.php b/src/Sismo/Commit.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/DBusNotifier.php b/src/Sismo/DBusNotifier.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/GithubProject.php b/src/Sismo/GithubProject.php
+old mode 100644
+new mode 100755
+index 6068524..7b91563
+--- a/src/Sismo/GithubProject.php
++++ b/src/Sismo/GithubProject.php
+@@ -20,6 +20,12 @@ use Symfony\Component\Process\Process;
+  */
+ class GithubProject extends Project
+ {
++  
++    public function getScm()
++    {
++      return 'git';
++    }
++    
+     public function setRepository($url)
+     {
+         parent::setRepository($url);
+diff --git a/src/Sismo/GrowlNotifier.php b/src/Sismo/GrowlNotifier.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/Notifier.php b/src/Sismo/Notifier.php
+old mode 100644
+new mode 100755
+diff --git a/src/Sismo/Project.php b/src/Sismo/Project.php
+old mode 100644
+new mode 100755
+index 5a9ba5f..ca5a3ec
+--- a/src/Sismo/Project.php
++++ b/src/Sismo/Project.php
+@@ -27,11 +27,14 @@ class Project
+     private $commits = array();
+     private $building = false;
+     private $notifiers = array();
++    private $scmType;
+ 
+-    public function __construct($name, $repository = null, $notifiers = array(), $slug = null)
++    public function __construct($name, $repository = null, $scmType = 'git', $notifiers = array(), $slug = null)
+     {
+         $this->name = $name;
+         $this->slug = $slug ?: $this->slugify($name);
++        
++        $this->scmType = $scmType;
+ 
+         if (null !== $repository) {
+             $this->setRepository($repository);
+@@ -46,6 +49,21 @@ class Project
+         }
+     }
+ 
++    public function setScm($type)
++    {
++      $this->scmType = $type;
++    }
++    
++    public function getScm()
++    {
++      return $this->scmType;
++    }
++        
++    public function setSlug($slug)
++    {
++      $this->slug = $slug;
++    }
++    
+     public function __toString()
+     {
+         return $this->name;
+diff --git a/src/Sismo/Sismo.php b/src/Sismo/Sismo.php
+old mode 100644
+new mode 100755
+index 308e2e9..5ca6c2c
+--- a/src/Sismo/Sismo.php
++++ b/src/Sismo/Sismo.php
+@@ -25,13 +25,15 @@ class Sismo
+     const SILENT_BUILD = 4;
+ 
+     private $storage;
+-    private $builder;
++    private $builder=array();
+     private $projects = array();
+ 
+-    public function __construct(Storage $storage, Builder $builder)
++    public function __construct(Storage $storage, array $builder)
+     {
++      
+         $this->storage = $storage;
+         $this->builder = $builder;
++        
+     }
+ 
+     public function build(Project $project, $revision = null, $flags = 0, $callback = null)
+@@ -41,10 +43,9 @@ class Sismo
+             return;
+         }
+ 
+-        $this->builder->init($project, $callback);
+-
+-        list($sha, $author, $date, $message) = $this->builder->prepare($revision, Sismo::LOCAL_BUILD !== ($flags & Sismo::LOCAL_BUILD));
++        $this->builder[$project->getScm()]->init($project, $callback);
+ 
++        list($sha, $author, $date, $message) = $this->builder[$project->getScm()]->prepare($revision, Sismo::LOCAL_BUILD !== ($flags & Sismo::LOCAL_BUILD));
+         $commit = $this->storage->getCommit($project, $sha);
+ 
+         // commit has already been built
+@@ -54,8 +55,9 @@ class Sismo
+ 
+         $commit = $this->storage->initCommit($project, $sha, $author, \DateTime::createFromFormat('Y-m-d H:i:s O', $date), $message);
+ 
+-        $process = $this->builder->build();
+-
++        $process = $this->builder[$project->getScm()]->build();
++        
++              
+         if ($process->getExitCode() > 0) {
+             $commit->setStatusCode('failed');
+             $commit->setOutput(sprintf("\033[31mBuild failed\033[0m\n\n\033[33mOutput\033[0m\n%s\n\n\033[33m Error\033[0m%s", $process->getOutput(), $process->getErrorOutput()));
+@@ -63,7 +65,7 @@ class Sismo
+             $commit->setStatusCode('success');
+             $commit->setOutput($process->getOutput());
+         }
+-
++        
+         $this->storage->updateCommit($commit);
+ 
+         if (Sismo::SILENT_BUILD !== ($flags & Sismo::SILENT_BUILD)) {
+diff --git a/src/Sismo/Storage.php b/src/Sismo/Storage.php
+old mode 100644
+new mode 100755
+diff --git a/src/app.php b/src/app.php
+old mode 100644
+new mode 100755
+diff --git a/src/bootstrap.php b/src/bootstrap.php
+old mode 100644
+new mode 100755
+index ff3586f..fe29422
+--- a/src/bootstrap.php
++++ b/src/bootstrap.php
+@@ -19,7 +19,6 @@ use Sismo\Commit;
+ use Sismo\Storage;
+ use Sismo\Builder;
+ use Symfony\Component\ClassLoader\UniversalClassLoader;
+-
+ require_once __DIR__.'/../vendor/silex/autoload.php';
+ 
+ $loader = new UniversalClassLoader();
+@@ -43,6 +42,8 @@ $app->register(new TwigExtension(), array(
+     }),
+ ));
+ 
++
++
+ $app['data.path']   = getenv('SISMO_DATA_PATH') ?: getenv('HOME').'/.sismo/data';
+ $app['config.file'] = getenv('SISMO_CONFIG_PATH') ?: getenv('HOME').'/.sismo/config.php';
+ $app['build.path']  = $app->share(function ($app) { return $app['data.path'].'/build'; });
+@@ -53,9 +54,15 @@ $app['db.path']     = $app->share(function ($app) {
+ 
+     return $app['data.path'].'/sismo.db';
+ });
++
++
+ $app['twig.cache.path'] = $app->share(function ($app) { return $app['data.path'].'/cache'; });
+ $app['git.path']        = 'git';
++$app['svn.path']        = 'svn';
++
+ $app['git.cmds']        = array();
++$app['svn.cmds']        = array();
++
+ $app['db.schema']       = <<<EOF
+ CREATE TABLE IF NOT EXISTS project (
+     slug        TEXT,
+@@ -93,12 +100,17 @@ $app['storage'] = $app->share(function () use ($app) {
+     return new Storage($app['db']);
+ });
+ 
+-$app['builder'] = $app->share(function () use ($app) {
+-    return new Builder($app['build.path'], $app['git.path'], $app['git.cmds']);
++
++$app['builder_git'] = $app->share(function () use ($app) {
++    return new \Sismo\GitBuilder($app['build.path'], $app['git.path'], $app['git.cmds']);
++});
++
++$app['builder_svn'] = $app->share(function () use ($app) {
++    return new \Sismo\SvnBuilder($app['build.path'], $app['svn.path'], $app['svn.cmds']);
+ });
+ 
+ $app['sismo'] = $app->share(function () use ($app) {
+-    $sismo = new Sismo($app['storage'], $app['builder']);
++    $sismo = new Sismo($app['storage'], array('svn'=>$app['builder_svn'],'git'=>$app['builder_git']));
+     if (!is_file($app['config.file'])) {
+         throw new \RuntimeException(sprintf("Looks like you forgot to define your projects.\nSismo looked into \"%s\".", $app['config.file']));
+     }
+diff --git a/src/console.php b/src/console.php
+old mode 100644
+new mode 100755
+diff --git a/src/templates/ccmonitor.twig.xml b/src/templates/ccmonitor.twig.xml
+old mode 100644
+new mode 100755
+diff --git a/src/templates/error.twig b/src/templates/error.twig
+old mode 100644
+new mode 100755
+diff --git a/src/templates/layout.twig b/src/templates/layout.twig
+old mode 100644
+new mode 100755
+diff --git a/src/templates/project.twig b/src/templates/project.twig
+old mode 100644
+new mode 100755
+diff --git a/src/templates/projects.twig b/src/templates/projects.twig
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/AnsiEscapeSequencesConverterTest.php b/tests/Sismo/Tests/AnsiEscapeSequencesConverterTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/BuildExceptionTest.php b/tests/Sismo/Tests/BuildExceptionTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/CommitTest.php b/tests/Sismo/Tests/CommitTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/GithubProjectTest.php b/tests/Sismo/Tests/GithubProjectTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/NotifierTest.php b/tests/Sismo/Tests/NotifierTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/Sismo/Tests/ProjectTest.php b/tests/Sismo/Tests/ProjectTest.php
+old mode 100644
+new mode 100755
+index cb2160a..9eb7e2c
+--- a/tests/Sismo/Tests/ProjectTest.php
++++ b/tests/Sismo/Tests/ProjectTest.php
+@@ -15,6 +15,8 @@ use Sismo\Project;
+ 
+ class ProjectTest extends \PHPUnit_Framework_TestCase
+ {
++
++  
+     public function testConstructor()
+     {
+         $project = new Project('Twig Local');
+@@ -22,11 +24,17 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
+         $this->assertEquals('twig-local', $project->getSlug());
+         $this->assertEquals('master', $project->getBranch());
+         $this->assertEquals(array(), $project->getNotifiers());
++        
++        /** Add svn support **/
++        $this->assertEquals('git', $project->getScm());
+ 
+-        $project = new Project('Twig Local', 'repo', array(), 'twig');
++        $project = new Project('Twig Local', 'repo', 'svn', array(), 'twig');
+         $this->assertEquals('twig', $project->getSlug());
+         $this->assertEquals(array(), $project->getNotifiers());
+-
++        
++        /** Add svn support **/
++        $this->assertEquals('svn', $project->getScm());
++        
+         $project = new Project('Twig Local', 'repo');
+         $this->assertEquals('repo', $project->getRepository());
+         $this->assertEquals('master', $project->getBranch());
+@@ -35,7 +43,7 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
+         $this->assertEquals('repo', $project->getRepository());
+         $this->assertEquals('feat', $project->getBranch());
+ 
+-        $project = new Project('Twig Local', 'repo', array(
++        $project = new Project('Twig Local', 'repo', 'git', array(
+             $notifier1 = $this->getMock('Sismo\Notifier'),
+             $notifier2 = $this->getMock('Sismo\Notifier'),
+         ));
+diff --git a/tests/Sismo/Tests/SismoTest.php b/tests/Sismo/Tests/SismoTest.php
+old mode 100644
+new mode 100755
+index 3eb49dc..733f3d3
+--- a/tests/Sismo/Tests/SismoTest.php
++++ b/tests/Sismo/Tests/SismoTest.php
+@@ -58,7 +58,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build won't be triggered
+         $builder = $this->getBuilder();
+-        $builder->expects($this->never())->method('build');
++        $builder['svn']->expects($this->never())->method('build');
++        $builder['git']->expects($this->never())->method('build');
+ 
+         $sismo = new Sismo($this->getStorage($commit), $builder);
+         $sismo->build($this->getProject());
+@@ -72,8 +73,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build is triggered because of FORCE_BUILD flags
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+ 
+         $sismo = new Sismo($this->getStorage($commit), $builder);
+         $sismo->build($this->getProject(), null, Sismo::FORCE_BUILD);
+@@ -87,7 +88,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build won't be triggered
+         $builder = $this->getBuilder();
+-        $builder->expects($this->never())->method('build');
++        $builder['git']->expects($this->never())->method('build');
+ 
+         $sismo = new Sismo($this->getStorage(), $builder);
+         $sismo->build($project);
+@@ -101,12 +102,12 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build is triggered because of FORCE_BUILD flags
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+-
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
++        
+         $commit = $this->getCommit();
+         $commit->expects($this->once())->method('isBuilt')->will($this->returnValue(false));
+-
++      
+         $sismo = new Sismo($this->getStorage($commit), $builder);
+         $sismo->build($project, null, Sismo::FORCE_BUILD);
+     }
+@@ -115,8 +116,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+     {
+         // build is triggered as commit does not exist
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+ 
+         $storage = $this->getStorage();
+         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
+@@ -129,8 +130,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+     {
+         // build is triggered as commit does not exist
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+ 
+         $storage = $this->getStorage();
+         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
+@@ -141,6 +142,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
+         $project->expects($this->once())->method('getNotifiers')->will($this->returnValue(array($notifier)));
++        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
+ 
+         $sismo = new Sismo($storage, $builder);
+         $sismo->build($project);
+@@ -150,8 +152,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+     {
+         // build is triggered as commit does not exist
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+ 
+         $storage = $this->getStorage();
+         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
+@@ -163,7 +165,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+         // notifiers won't be get from project
+         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
+         $project->expects($this->never())->method('getNotifiers')->will($this->returnValue(array($notifier)));
+-
++        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
++        
+         $sismo = new Sismo($storage, $builder);
+         $sismo->build($project, null, Sismo::SILENT_BUILD);
+     }
+@@ -177,8 +180,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build is triggered as commit does not exist
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($process));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($process));
+ 
+         // check commit status
+         $commit = $this->getCommit();
+@@ -204,8 +207,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+         // build is triggered as commit does not exist
+         $builder = $this->getBuilder();
+-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+-        $builder->expects($this->once())->method('build')->will($this->returnValue($process));
++        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
++        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($process));
+ 
+         // check commit status
+         $commit = $this->getCommit();
+@@ -223,7 +226,10 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+ 
+     private function getBuilder()
+     {
+-        return $this->getMockBuilder('Sismo\Builder')->disableOriginalConstructor()->getMock();
++        return array(
++        	'svn' => $this->getMockBuilder('Sismo\SvnBuilder')->disableOriginalConstructor()->getMock(),
++        	'git' => $this->getMockBuilder('Sismo\GitBuilder')->disableOriginalConstructor()->getMock(),
++        );
+     }
+ 
+     private function getNotifier()
+@@ -235,7 +241,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
+     {
+         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
+         $project->expects($this->any())->method('getNotifiers')->will($this->returnValue(array()));
+-
++        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
+         return $project;
+     }
+ 
+diff --git a/tests/Sismo/Tests/StorageTest.php b/tests/Sismo/Tests/StorageTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/appTest.php b/tests/appTest.php
+old mode 100644
+new mode 100755
+diff --git a/tests/bootstrapTest.php b/tests/bootstrapTest.php
+old mode 100644
+new mode 100755
+index 2454ed8..79ef910
+--- a/tests/bootstrapTest.php
++++ b/tests/bootstrapTest.php
+@@ -42,7 +42,8 @@ class BootstrapTest extends \PHPUnit_Framework_TestCase
+     {
+         $this->assertInstanceOf('SQLite3', $this->app['db']);
+         $this->assertInstanceOf('Sismo\Storage', $this->app['storage']);
+-        $this->assertInstanceOf('Sismo\Builder', $this->app['builder']);
++        $this->assertInstanceOf('Sismo\GitBuilder', $this->app['builder_git']);
++        $this->assertInstanceOf('Sismo\SvnBuilder', $this->app['builder_svn']);
+         $this->assertInstanceOf('Sismo\Sismo', $this->app['sismo']);
+     }
+ }
+diff --git a/tests/consoleTest.php b/tests/consoleTest.php
+old mode 100644
+new mode 100755
+diff --git a/vendor/Symfony/Bridge/Twig b/vendor/Symfony/Bridge/Twig
+--- a/vendor/Symfony/Bridge/Twig
++++ b/vendor/Symfony/Bridge/Twig
+@@ -1 +1 @@
+-Subproject commit 9147930a379f104fddffa4a221a2ff01fc489736
++Subproject commit 9147930a379f104fddffa4a221a2ff01fc489736-dirty
+diff --git a/vendor/Symfony/Component/Console b/vendor/Symfony/Component/Console
+--- a/vendor/Symfony/Component/Console
++++ b/vendor/Symfony/Component/Console
+@@ -1 +1 @@
+-Subproject commit d2575ca188b6566334b560776de2874d22507b68
++Subproject commit d2575ca188b6566334b560776de2874d22507b68-dirty
+diff --git a/vendor/Symfony/Component/Process b/vendor/Symfony/Component/Process
+--- a/vendor/Symfony/Component/Process
++++ b/vendor/Symfony/Component/Process
+@@ -1 +1 @@
+-Subproject commit 5d601731c6b9ca14aaa910711cc275c955f09119
++Subproject commit 5d601731c6b9ca14aaa910711cc275c955f09119-dirty
+diff --git a/vendor/silex b/vendor/silex
+--- a/vendor/silex
++++ b/vendor/silex
+@@ -1 +1 @@
+-Subproject commit 8aead8f95496e3e7d5de681b861ef56055490893
++Subproject commit 8aead8f95496e3e7d5de681b861ef56055490893-dirty
+diff --git a/web/.htaccess b/web/.htaccess
+old mode 100644
+new mode 100755
+diff --git a/web/css/sismo.css b/web/css/sismo.css
+old mode 100644
+new mode 100755
+diff --git a/web/index.php b/web/index.php
+old mode 100644
+new mode 100755
