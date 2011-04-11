@@ -15,6 +15,8 @@ use Sismo\Project;
 
 class ProjectTest extends \PHPUnit_Framework_TestCase
 {
+
+  
     public function testConstructor()
     {
         $project = new Project('Twig Local');
@@ -22,11 +24,17 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('twig-local', $project->getSlug());
         $this->assertEquals('master', $project->getBranch());
         $this->assertEquals(array(), $project->getNotifiers());
+        
+        /** Add svn support **/
+        $this->assertEquals('git', $project->getScm());
 
-        $project = new Project('Twig Local', 'repo', array(), 'twig');
+        $project = new Project('Twig Local', 'repo', 'svn', array(), 'twig');
         $this->assertEquals('twig', $project->getSlug());
         $this->assertEquals(array(), $project->getNotifiers());
-
+        
+        /** Add svn support **/
+        $this->assertEquals('svn', $project->getScm());
+        
         $project = new Project('Twig Local', 'repo');
         $this->assertEquals('repo', $project->getRepository());
         $this->assertEquals('master', $project->getBranch());
@@ -35,7 +43,7 @@ class ProjectTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('repo', $project->getRepository());
         $this->assertEquals('feat', $project->getBranch());
 
-        $project = new Project('Twig Local', 'repo', array(
+        $project = new Project('Twig Local', 'repo', 'git', array(
             $notifier1 = $this->getMock('Sismo\Notifier'),
             $notifier2 = $this->getMock('Sismo\Notifier'),
         ));

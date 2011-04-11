@@ -20,6 +20,12 @@ use Symfony\Component\Process\Process;
  */
 class GithubProject extends Project
 {
+  
+    public function getScm()
+    {
+      return 'git';
+    }
+    
     public function setRepository($url)
     {
         parent::setRepository($url);

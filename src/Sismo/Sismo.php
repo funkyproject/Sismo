@@ -25,13 +25,15 @@ class Sismo
     const SILENT_BUILD = 4;
 
     private $storage;
-    private $builder;
+    private $builder=array();
     private $projects = array();
 
-    public function __construct(Storage $storage, Builder $builder)
+    public function __construct(Storage $storage, array $builder)
     {
+      
         $this->storage = $storage;
         $this->builder = $builder;
+        
     }
 
     public function build(Project $project, $revision = null, $flags = 0, $callback = null)
@@ -41,10 +43,9 @@ class Sismo
             return;
         }
 
-        $this->builder->init($project, $callback);
+        $this->builder[$project->getScm()]->init($project, $callback);
 
-        list($sha, $author, $date, $message) = $this->builder->prepare($revision, Sismo::LOCAL_BUILD !== ($flags & Sismo::LOCAL_BUILD));
-
+        list($sha, $author, $date, $message) = $this->builder[$project->getScm()]->prepare($revision, Sismo::LOCAL_BUILD !== ($flags & Sismo::LOCAL_BUILD));
         $commit = $this->storage->getCommit($project, $sha);
 
         // commit has already been built
@@ -54,8 +55,9 @@ class Sismo
 
         $commit = $this->storage->initCommit($project, $sha, $author, \DateTime::createFromFormat('Y-m-d H:i:s O', $date), $message);
 
-        $process = $this->builder->build();
-
+        $process = $this->builder[$project->getScm()]->build();
+        
+              
         if ($process->getExitCode() > 0) {
             $commit->setStatusCode('failed');
             $commit->setOutput(sprintf("\033[31mBuild failed\033[0m\n\n\033[33mOutput\033[0m\n%s\n\n\033[33m Error\033[0m%s", $process->getOutput(), $process->getErrorOutput()));
@@ -63,7 +65,7 @@ class Sismo
             $commit->setStatusCode('success');
             $commit->setOutput($process->getOutput());
         }
-
+        
         $this->storage->updateCommit($commit);
 
         if (Sismo::SILENT_BUILD !== ($flags & Sismo::SILENT_BUILD)) {

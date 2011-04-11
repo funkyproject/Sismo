@@ -27,11 +27,14 @@ class Project
     private $commits = array();
     private $building = false;
     private $notifiers = array();
+    private $scmType;
 
-    public function __construct($name, $repository = null, $notifiers = array(), $slug = null)
+    public function __construct($name, $repository = null, $scmType = 'git', $notifiers = array(), $slug = null)
     {
         $this->name = $name;
         $this->slug = $slug ?: $this->slugify($name);
+        
+        $this->scmType = $scmType;
 
         if (null !== $repository) {
             $this->setRepository($repository);
@@ -46,6 +49,21 @@ class Project
         }
     }
 
+    public function setScm($type)
+    {
+      $this->scmType = $type;
+    }
+    
+    public function getScm()
+    {
+      return $this->scmType;
+    }
+        
+    public function setSlug($slug)
+    {
+      $this->slug = $slug;
+    }
+    
     public function __toString()
     {
         return $this->name;

@@ -58,7 +58,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build won't be triggered
         $builder = $this->getBuilder();
-        $builder->expects($this->never())->method('build');
+        $builder['svn']->expects($this->never())->method('build');
+        $builder['git']->expects($this->never())->method('build');
 
         $sismo = new Sismo($this->getStorage($commit), $builder);
         $sismo->build($this->getProject());
@@ -72,8 +73,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build is triggered because of FORCE_BUILD flags
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
 
         $sismo = new Sismo($this->getStorage($commit), $builder);
         $sismo->build($this->getProject(), null, Sismo::FORCE_BUILD);
@@ -87,7 +88,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build won't be triggered
         $builder = $this->getBuilder();
-        $builder->expects($this->never())->method('build');
+        $builder['git']->expects($this->never())->method('build');
 
         $sismo = new Sismo($this->getStorage(), $builder);
         $sismo->build($project);
@@ -101,12 +102,12 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build is triggered because of FORCE_BUILD flags
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
-
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+        
         $commit = $this->getCommit();
         $commit->expects($this->once())->method('isBuilt')->will($this->returnValue(false));
-
+      
         $sismo = new Sismo($this->getStorage($commit), $builder);
         $sismo->build($project, null, Sismo::FORCE_BUILD);
     }
@@ -115,8 +116,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
     {
         // build is triggered as commit does not exist
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
 
         $storage = $this->getStorage();
         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
@@ -129,8 +130,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
     {
         // build is triggered as commit does not exist
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
 
         $storage = $this->getStorage();
         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
@@ -141,6 +142,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
         $project->expects($this->once())->method('getNotifiers')->will($this->returnValue(array($notifier)));
+        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
 
         $sismo = new Sismo($storage, $builder);
         $sismo->build($project);
@@ -150,8 +152,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
     {
         // build is triggered as commit does not exist
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($this->getProcess()));
 
         $storage = $this->getStorage();
         $storage->expects($this->any())->method('initCommit')->will($this->returnValue($this->getCommit()));
@@ -163,7 +165,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
         // notifiers won't be get from project
         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
         $project->expects($this->never())->method('getNotifiers')->will($this->returnValue(array($notifier)));
-
+        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
+        
         $sismo = new Sismo($storage, $builder);
         $sismo->build($project, null, Sismo::SILENT_BUILD);
     }
@@ -177,8 +180,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build is triggered as commit does not exist
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($process));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($process));
 
         // check commit status
         $commit = $this->getCommit();
@@ -204,8 +207,8 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
         // build is triggered as commit does not exist
         $builder = $this->getBuilder();
-        $builder->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
-        $builder->expects($this->once())->method('build')->will($this->returnValue($process));
+        $builder['git']->expects($this->once())->method('prepare')->will($this->returnValue(array('sha1', 'fabien', '2011-01-01 01:01:01 +0200', 'initial commit')));
+        $builder['git']->expects($this->once())->method('build')->will($this->returnValue($process));
 
         // check commit status
         $commit = $this->getCommit();
@@ -223,7 +226,10 @@ class SismoTest extends \PHPUnit_Framework_TestCase
 
     private function getBuilder()
     {
-        return $this->getMockBuilder('Sismo\Builder')->disableOriginalConstructor()->getMock();
+        return array(
+        	'svn' => $this->getMockBuilder('Sismo\SvnBuilder')->disableOriginalConstructor()->getMock(),
+        	'git' => $this->getMockBuilder('Sismo\GitBuilder')->disableOriginalConstructor()->getMock(),
+        );
     }
 
     private function getNotifier()
@@ -235,7 +241,7 @@ class SismoTest extends \PHPUnit_Framework_TestCase
     {
         $project = $this->getMockBuilder('Sismo\Project')->disableOriginalConstructor()->getMock();
         $project->expects($this->any())->method('getNotifiers')->will($this->returnValue(array()));
-
+        $project->expects($this->any())->method('getScm')->will($this->returnValue('git'));
         return $project;
     }
 

@@ -19,7 +19,6 @@ use Sismo\Commit;
 use Sismo\Storage;
 use Sismo\Builder;
 use Symfony\Component\ClassLoader\UniversalClassLoader;
-
 require_once __DIR__.'/../vendor/silex/autoload.php';
 
 $loader = new UniversalClassLoader();
@@ -43,6 +42,8 @@ $app->register(new TwigExtension(), array(
     }),
 ));
 
+
+
 $app['data.path']   = getenv('SISMO_DATA_PATH') ?: getenv('HOME').'/.sismo/data';
 $app['config.file'] = getenv('SISMO_CONFIG_PATH') ?: getenv('HOME').'/.sismo/config.php';
 $app['build.path']  = $app->share(function ($app) { return $app['data.path'].'/build'; });
@@ -53,9 +54,15 @@ $app['db.path']     = $app->share(function ($app) {
 
     return $app['data.path'].'/sismo.db';
 });
+
+
 $app['twig.cache.path'] = $app->share(function ($app) { return $app['data.path'].'/cache'; });
 $app['git.path']        = 'git';
+$app['svn.path']        = 'svn';
+
 $app['git.cmds']        = array();
+$app['svn.cmds']        = array();
+
 $app['db.schema']       = <<<EOF
 CREATE TABLE IF NOT EXISTS project (
     slug        TEXT,
@@ -93,12 +100,17 @@ $app['storage'] = $app->share(function () use ($app) {
     return new Storage($app['db']);
 });
 
-$app['builder'] = $app->share(function () use ($app) {
-    return new Builder($app['build.path'], $app['git.path'], $app['git.cmds']);
+
+$app['builder_git'] = $app->share(function () use ($app) {
+    return new \Sismo\GitBuilder($app['build.path'], $app['git.path'], $app['git.cmds']);
+});
+
+$app['builder_svn'] = $app->share(function () use ($app) {
+    return new \Sismo\SvnBuilder($app['build.path'], $app['svn.path'], $app['svn.cmds']);
 });
 
 $app['sismo'] = $app->share(function () use ($app) {
-    $sismo = new Sismo($app['storage'], $app['builder']);
+    $sismo = new Sismo($app['storage'], array('svn'=>$app['builder_svn'],'git'=>$app['builder_git']));
     if (!is_file($app['config.file'])) {
         throw new \RuntimeException(sprintf("Looks like you forgot to define your projects.\nSismo looked into \"%s\".", $app['config.file']));
     }

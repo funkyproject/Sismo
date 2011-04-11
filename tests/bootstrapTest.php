@@ -42,7 +42,8 @@ class BootstrapTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertInstanceOf('SQLite3', $this->app['db']);
         $this->assertInstanceOf('Sismo\Storage', $this->app['storage']);
-        $this->assertInstanceOf('Sismo\Builder', $this->app['builder']);
+        $this->assertInstanceOf('Sismo\GitBuilder', $this->app['builder_git']);
+        $this->assertInstanceOf('Sismo\SvnBuilder', $this->app['builder_svn']);
         $this->assertInstanceOf('Sismo\Sismo', $this->app['sismo']);
     }
 }
