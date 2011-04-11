@@ -10,7 +10,7 @@ you notifications.
 What makes Sismo special?
 -------------------------
 
-Sismo has been optimized to run *locally* on your computer for your *Git*
+Sismo has been optimized to run *locally* on your computer for your *Git* or *Svn*
 projects. Even if it can test *remote* repositories, Sismo is better used as a
 local ``post-commit`` hook. Whenever you commit changes locally, Sismo runs
 the tests and give you *immediate* feedback *before* you actually push your
