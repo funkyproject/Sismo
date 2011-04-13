@@ -19,6 +19,8 @@ use Sismo\Commit;
 use Sismo\Storage;
 use Sismo\Builder;
 use Symfony\Component\ClassLoader\UniversalClassLoader;
+
+
 require_once __DIR__.'/../vendor/silex/autoload.php';
 
 $loader = new UniversalClassLoader();
@@ -99,7 +101,6 @@ $app['db'] = $app->share(function () use ($app) {
 $app['storage'] = $app->share(function () use ($app) {
     return new Storage($app['db']);
 });
-
 
 $app['builder_git'] = $app->share(function () use ($app) {
     return new \Sismo\GitBuilder($app['build.path'], $app['git.path'], $app['git.cmds']);

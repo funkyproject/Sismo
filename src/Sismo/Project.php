@@ -59,11 +59,6 @@ class Project
       return $this->scmType;
     }
         
-    public function setSlug($slug)
-    {
-      $this->slug = $slug;
-    }
-    
     public function __toString()
     {
         return $this->name;
@@ -162,6 +157,11 @@ class Project
     public function getSlug()
     {
         return $this->slug;
+    }
+
+    public function setSlug($slug)
+    {
+        $this->slug = $slug;
     }
 
     public function getRepository()

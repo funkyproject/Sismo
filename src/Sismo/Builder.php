@@ -30,6 +30,5 @@ interface Builder
 
     public function prepare($revision, $sync);
 
-    //private function execute($command, $message);
 }
 // @codeCoverageIgnoreEnd

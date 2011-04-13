@@ -63,7 +63,7 @@ By default, Sismo reads its configuration from ``~/.sismo/config.php``::
     $sf2->setCommand('./vendors.sh; phpunit');
     $sf2->setSlug('symfony-local');
     $sf2->setUrlPattern('https://github.com/symfony/symfony/commit/%commit%');
-    $sf2->addNotifer($notifier);
+    $sf2->addNotifier($notifier);
     $projects[] = $sf2;
 
     return $projects;
@@ -83,10 +83,22 @@ Build all configured projects by running the ``build`` command:
 
     $ php sismo.php build --verbose
 
-If a build fails, Sismo will send notifications. You can also check the build
-output from the web interface:
+If a build fails, Sismo will send notifications. Use the ``output`` command to
+see the latest build output of a project:
+
+    $ php sismo.php output twig
+
+If you have configured Sismo to be accessible from the web interface, you can
+also check the build outputs there:
 
 .. image:: http://sismo-project.org/images/sismo-project.png
+
+If your web server runs under a different user than the one you use on the
+CLI, you will need to set some environment variables in your virtual host
+configuration:
+
+    SetEnv SISMO_DATA_PATH "/path/to/sismo/data"
+    SetEnv SISMO_CONFIG_PATH "/path/to/sismo/config"
 
 The ``build`` command is quite powerful and has many options. Learn more by
 appending ``--help``:

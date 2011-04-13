@@ -113,6 +113,7 @@ $classes = array(
     'Sismo\GithubProject',
     'Sismo\Notifier',
     'Sismo\GrowlNotifier',
+    'Sismo\BuildException',
     'Sismo\DBusNotifier',
     'Symfony\Component\Process\Process',
     'Sismo\Commit',
@@ -123,6 +124,7 @@ $classes = array(
     'Silex\GetResponseForErrorEvent',
     'Silex\StringResponseConverter',
     'Symfony\Component\HttpFoundation\Response',
+    'Symfony\Component\HttpFoundation\RedirectResponse',
     'Symfony\Component\HttpFoundation\ResponseHeaderBag',
     'Symfony\Component\HttpKernel\Event\FilterResponseEvent',
 );
