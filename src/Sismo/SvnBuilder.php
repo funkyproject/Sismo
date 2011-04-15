@@ -66,7 +66,7 @@ class SvnBuilder implements Builder
     }
 
     if (!file_exists($this->buildDir.'/.svn')) {
-      $this->execute(strtr($this->scmPath.' '.$this->scmCmds['clone'], array('%repo%' => $this->project->getRepository(), '%dir%' => $this->buildDir , '%branch%' => $this->project->getBranch())), sprintf('Unable to checkout repository for project "%s".', $this->project));
+      $this->execute(strtr($this->scmPath.' '.$this->scmCmds['checkout'], array('%repo%' => $this->project->getRepository(), '%dir%' => $this->buildDir , '%branch%' => $this->project->getBranch())), sprintf('Unable to checkout repository for project "%s".', $this->project));
     }
 
     if ($sync) {
